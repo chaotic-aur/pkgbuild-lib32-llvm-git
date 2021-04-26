@@ -4,13 +4,13 @@
 pkgbase=lib32-llvm-git
 pkgname=('lib32-llvm-libs-git' 'lib32-clang-git' 'lib32-llvm-git')
 pkgdesc='Low Level Virtual Machine (git version)'
-pkgver=13.0.0_r380685.b380699416d8
+pkgver=13.0.0_r386096.6048d1d19c55
 pkgrel=1
 groups=('chaotic-mesa-git')
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
-makedepends=('git' 'cmake' 'ninja' 'python' 'python2'
+makedepends=('git' 'cmake' 'ninja' 'python' 'python'
              'lib32-gcc-libs' 'lib32-libffi' 'lib32-libunwind'
              'lib32-libxml2' 'lib32-zlib')
 
@@ -36,8 +36,6 @@ pkgver() {
 
 prepare() {
     cd llvm-project
-    # llvm-project contains a lot of stuff, remove parts that aren't used by this package
-    rm -rf debuginfo-tests libclc libcxx libcxxabi llgo openmp parallel-libs pstl libc
 
     rm -rf "$srcdir"/fakeinstall
 }
@@ -72,7 +70,6 @@ build() {
         -D LLVM_LINK_LLVM_DYLIB=ON \
         -D LLVM_ENABLE_RTTI=ON \
         -D LLVM_ENABLE_FFI=ON \
-        -D LLVM_BUILD_TESTS=OFF \
         -D LLVM_BUILD_DOCS=OFF \
         -D LLVM_ENABLE_SPHINX=OFF \
         -D LLVM_ENABLE_DOXYGEN=OFF \
@@ -111,10 +108,11 @@ package_lib32-llvm-libs-git() {
 
 package_lib32-clang-git() {
     pkgdesc="C language family frontend for LLVM (32-bit)"
-    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" "gcc-multilib")
+    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" "lib32-gcc-libs" "gcc-multilib")
     provides=("lib32-clang=$pkgver")
     replaces=('lib32-clang-svn')
     conflicts=('lib32-clang' 'lib32-clang-svn')
+    optdepends=('python: needed for hwsan_symbolize')
 
     _fakeinstall fakeinstall/usr/lib32/clang
     _fakeinstall fakeinstall/usr/lib32/cmake/clang/
@@ -124,7 +122,7 @@ package_lib32-clang-git() {
 
 package_lib32-llvm-git() {
     pkgdesc='Low Level Virtual Machine (32-bit)(git version)'
-    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" 'llvm-git')
+    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" 'llvm-git' 'lib32-gcc-libs')
     provides=("lib32-llvm=$pkgver")
     replaces=('lib32-llvm-svn')
     conflicts=('lib32-llvm' 'lib32-llvm-svn')

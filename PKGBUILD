@@ -4,7 +4,7 @@
 pkgbase=lib32-llvm-git
 pkgname=('lib32-llvm-libs-git' 'lib32-clang-git' 'lib32-llvm-git')
 pkgdesc='Low Level Virtual Machine (git version)'
-pkgver=13.0.0_r386096.6048d1d19c55
+pkgver=13.0.0_r389275.ba51da820e4d
 pkgrel=1
 groups=('chaotic-mesa-git')
 arch=('x86_64')
@@ -77,7 +77,7 @@ build() {
         -D LLVM_BINUTILS_INCDIR=/usr/include \
         -D LLVM_APPEND_VC_REV=ON
 
-    ninja -C _build all LLVMgold
+    ninja -j8 -C _build all LLVMgold
     DESTDIR="$srcdir/fakeinstall" ninja -C _build install
 }
 

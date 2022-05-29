@@ -4,13 +4,13 @@
 pkgbase=lib32-llvm-git
 pkgname=('lib32-llvm-libs-git' 'lib32-clang-git' 'lib32-llvm-git')
 pkgdesc='Low Level Virtual Machine (git version)'
-pkgver=13.0.0_r389275.ba51da820e4d
+pkgver=15.0.0_r425063.0bd645d3
 pkgrel=1
 groups=('chaotic-mesa-git')
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
-makedepends=('git' 'cmake' 'ninja' 'python' 'python'
+makedepends=('git' 'cmake' 'ninja' 'python' 'python2'
              'lib32-gcc-libs' 'lib32-libffi' 'lib32-libunwind'
              'lib32-libxml2' 'lib32-zlib')
 
@@ -70,14 +70,16 @@ build() {
         -D LLVM_LINK_LLVM_DYLIB=ON \
         -D LLVM_ENABLE_RTTI=ON \
         -D LLVM_ENABLE_FFI=ON \
+        -D LLVM_BUILD_TESTS=OFF \
         -D LLVM_BUILD_DOCS=OFF \
+        -D LLVM_ENABLE_OCAMLDOC=OFF \
         -D LLVM_ENABLE_SPHINX=OFF \
         -D LLVM_ENABLE_DOXYGEN=OFF \
         -D FFI_INCLUDE_DIR="$(pkg-config --variable=includedir libffi)" \
         -D LLVM_BINUTILS_INCDIR=/usr/include \
         -D LLVM_APPEND_VC_REV=ON
 
-    ninja -j8 -C _build all LLVMgold
+    ninja -C _build all LLVMgold
     DESTDIR="$srcdir/fakeinstall" ninja -C _build install
 }
 

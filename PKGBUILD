@@ -4,7 +4,7 @@
 pkgbase=lib32-llvm-git
 pkgname=('lib32-llvm-libs-git' 'lib32-clang-git' 'lib32-llvm-git')
 pkgdesc='Low Level Virtual Machine (git version)'
-pkgver=16.0.0_r440184.4ae88a8d42f7
+pkgver=16.0.0_r448942.dc3875e46836
 pkgrel=1
 groups=('chaotic-mesa-git')
 arch=('x86_64')

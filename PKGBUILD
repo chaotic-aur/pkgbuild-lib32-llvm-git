@@ -1,27 +1,31 @@
 #!/usr/bin/bash
-
+#Maintainer: Solomon Choina <shlomochoina@gmail.com>
 # Based on LordHeavy's LLVM
 pkgbase=lib32-llvm-git
-pkgname=('lib32-llvm-libs-git' 'lib32-clang-git' 'lib32-llvm-git')
+pkgname=('lib32-spirv-llvm-translator-git' 'lib32-llvm-libs-git' 'lib32-clang-git' 'lib32-llvm-git')
 pkgdesc='Low Level Virtual Machine (git version)'
-pkgver=16.0.0_r448942.dc3875e46836
+pkgver=19.0.0_r498401.f42117c8517c
 pkgrel=1
 groups=('chaotic-mesa-git')
-arch=('x86_64')
+arch=($CARCH)
 url="https://llvm.org/"
-license=('custom:Apache 2.0 with LLVM Exception')
+license=('Apache-2.0 WITH LLVM-exception')
 makedepends=('git' 'cmake' 'ninja' 'python'
-             'lib32-gcc-libs' 'lib32-libffi' 'lib32-libunwind'
-             'lib32-libxml2' 'lib32-zlib' 'lib32-zstd')
+             'lib32-gcc-libs' 'lib32-libffi' 'lib32-libunwind' 'spirv-headers-git' 'lib32-spirv-tools-git'
+             'lib32-libxml2' 'lib32-zlib' 'lib32-zstd' 'gcc-multilib' 'llvm-git')
 
-source=("llvm-project::git+https://github.com/llvm/llvm-project.git")
+source=("llvm-project::git+https://github.com/llvm/llvm-project.git"
+        "git+https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git"
+      )
 
-md5sums=('SKIP')
-sha512sums=('SKIP')
+md5sums=('SKIP'
+         'SKIP')
+sha512sums=('SKIP'
+            'SKIP')
 options=('staticlibs') # 'debug' takes way too long to scan for the source files...
 
 pkgver() {
-    cd llvm-project/llvm
+    cd llvm-project/cmake/Modules
 
     # This will almost match the output of `llvm-config --version` when the
     # LLVM_APPEND_VC_REV cmake flag is turned on. The only difference is
@@ -30,7 +34,7 @@ pkgver() {
                         'BEGIN { ORS="." ; i=0 } \
              /set\(LLVM_VERSION_/ { print $2 ; i++ ; if (i==2) ORS="" } \
              END { print "\n" }' \
-                        CMakeLists.txt)_r$(git rev-list --count HEAD).$(git rev-parse --short HEAD)
+                        LLVMVersion.cmake)_r$(git rev-list --count HEAD).$(git rev-parse --short HEAD)
     echo "$_pkgver"
 }
 
@@ -38,6 +42,8 @@ prepare() {
     cd llvm-project
 
     rm -rf "$srcdir"/fakeinstall
+
+    cp -r $srcdir/SPIRV-LLVM-Translator llvm/projects
 }
 
 build() {
@@ -76,7 +82,9 @@ build() {
         -D LLVM_ENABLE_SPHINX=OFF \
         -D LLVM_ENABLE_DOXYGEN=OFF \
         -D FFI_INCLUDE_DIR="$(pkg-config --variable=includedir libffi)" \
-        -D LLVM_APPEND_VC_REV=ON
+        -D LLVM_APPEND_VC_REV=ON \
+        -D LLVM_ENABLE_DUMP=ON \
+        -D LLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR=/usr/include/spirv/
 
     ninja -C _build all
     DESTDIR="$srcdir/fakeinstall" ninja -C _build install
@@ -92,9 +100,21 @@ _fakeinstall () {
     done
 }
 
+package_lib32-spirv-llvm-translator-git() {
+  pkgdesc="Tool and a library for bi-directional translation between SPIR-V and LLVM IR"
+  depends=("lib32-llvm-git=$pkgver-$pkgrel" 'lib32-spirv-tools' 'spirv-llvm-translator-git')
+  provides=('lib32-spirv-llvm-translator')
+  conflicts=('lib32-spirv-llvm-translator')
+
+  _fakeinstall fakeinstall/usr/lib32/libLLVMSPIRVLib.*
+  _fakeinstall fakeinstall/usr/lib32/pkgconfig/LLVMSPIRVLib.pc
+  sed -i 's/17.0.0/19.0.0/g' $pkgdir/usr/lib32/pkgconfig/LLVMSPIRVLib.pc
+  install -Dm644 "$srcdir"/llvm-project/llvm/projects/SPIRV-LLVM-Translator/LICENSE.TXT "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
+
 package_lib32-llvm-libs-git() {
     pkgdesc='Low Level Virtual Machine library (runtime library)(32-bit)(git version)'
-    depends=('lib32-libffi' 'lib32-zlib' 'lib32-libxml2' 'lib32-gcc-libs' 'lib32-zstd')
+    depends=('lib32-libffi' 'lib32-zlib' 'lib32-libxml2' 'lib32-gcc-libs' 'lib32-zstd' 'lib32-llvm-git')
     provides=("lib32-llvm-libs=$pkgver")
     replaces=('lib32-llvm-libs-svn')
     conflicts=('lib32-llvm-libs-svn' 'lib32-llvm-libs')
@@ -109,7 +129,7 @@ package_lib32-llvm-libs-git() {
 
 package_lib32-clang-git() {
     pkgdesc="C language family frontend for LLVM (32-bit)"
-    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" "lib32-gcc-libs" "gcc-multilib")
+    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" "lib32-gcc-libs" "gcc-multilib" "lib32-llvm-git")
     provides=("lib32-clang=$pkgver")
     replaces=('lib32-clang-svn')
     conflicts=('lib32-clang' 'lib32-clang-svn')
@@ -123,7 +143,7 @@ package_lib32-clang-git() {
 
 package_lib32-llvm-git() {
     pkgdesc='Low Level Virtual Machine (32-bit)(git version)'
-    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" 'llvm-git' 'lib32-gcc-libs')
+    depends=("lib32-llvm-libs-git=$pkgver-$pkgrel" 'llvm-git' 'lib32-gcc-libs' 'lib32-libxml2' 'lib32-libffi' 'lib32-zlib' 'python' 'lib32-zstd')
     provides=("lib32-llvm=$pkgver")
     replaces=('lib32-llvm-svn')
     conflicts=('lib32-llvm' 'lib32-llvm-svn')
